@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { seedDiscordServers } from '@/lib/discord-mock';
+import { getLastRead, getUnread, setLastSeenServer } from '@/lib/discord-state';
 
 export default function Page({ params }: { params: { id: string } }) {
   const server = seedDiscordServers.find((s) => s.id === params.id);
@@ -10,6 +11,10 @@ export default function Page({ params }: { params: { id: string } }) {
 
   const textChannels = server.channels.filter((c) => c.type === 'text');
   const voiceChannels = server.channels.filter((c) => c.type === 'voice');
+
+  if (typeof window !== 'undefined') {
+    setLastSeenServer(server.id, Date.now());
+  }
 
   return (
     <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
@@ -30,15 +35,32 @@ export default function Page({ params }: { params: { id: string } }) {
         <div className="mt-4">
           <div className="text-xs font-semibold text-gray-500">文字频道</div>
           <div className="mt-2 space-y-1">
-            {textChannels.map((c) => (
-              <Link
-                key={c.id}
-                href={`/discord/servers/${server.id}/channel/${c.id}`}
-                className="block rounded-xl px-3 py-2 text-sm text-gray-800 hover:bg-[#f5f5f7]"
-              >
-                # {c.name}
-              </Link>
-            ))}
+            {textChannels.map((c) => {
+              const unread = typeof window === 'undefined' ? 0 : getUnread(server.id, c.id);
+              const lastRead = typeof window === 'undefined' ? 0 : getLastRead(server.id, c.id);
+              const hint = unread > 0 ? `${unread} 未读` : lastRead ? '已读' : '';
+              return (
+                <Link
+                  key={c.id}
+                  href={`/discord/servers/${server.id}/channel/${c.id}`}
+                  className="flex items-center justify-between rounded-xl px-3 py-2 text-sm text-gray-800 hover:bg-[#f5f5f7]"
+                >
+                  <span># {c.name}</span>
+                  {hint ? (
+                    <span
+                      className={
+                        'rounded-full px-2 py-0.5 text-xs ' +
+                        (unread > 0
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-500 ring-1 ring-black/10')
+                      }
+                    >
+                      {hint}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
           </div>
         </div>
 
@@ -71,6 +93,9 @@ export default function Page({ params }: { params: { id: string } }) {
         <div className="text-lg font-semibold">选择一个频道</div>
         <div className="mt-2 text-sm text-gray-600">
           左侧选择 #文字频道 开始聊天，或进入 🔊语音频道（占位）。
+        </div>
+        <div className="mt-4 text-xs text-gray-500">
+          新增能力：本页会显示每个频道的未读数（来自 localStorage）。
         </div>
       </div>
     </div>

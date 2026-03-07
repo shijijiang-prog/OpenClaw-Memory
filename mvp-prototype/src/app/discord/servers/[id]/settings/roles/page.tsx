@@ -2,23 +2,46 @@
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { seedDiscordServers, DiscordRole } from '@/lib/discord-mock';
+
+function rolesKey(serverId: string) {
+  return `wg.discord.roles.`;
+}
+
+function loadRoles(serverId: string, fallback: DiscordRole[]) {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(rolesKey(serverId));
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function saveRoles(serverId: string, roles: DiscordRole[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(rolesKey(serverId), JSON.stringify(roles));
+}
 
 export default function Page({ params }: { params: { id: string } }) {
   const server = seedDiscordServers.find((s) => s.id === params.id);
   if (!server) return notFound();
 
-  const [roles, setRoles] = useState<DiscordRole[]>(server.roles);
+  const initial = useMemo(() => loadRoles(server.id, server.roles), [server.id]);
+  const [roles, setRoles] = useState<DiscordRole[]>(initial);
 
   function toggle(roleId: string, key: keyof DiscordRole['permissions']) {
-    setRoles((prev) =>
-      prev.map((r) =>
+    setRoles((prev) => {
+      const next = prev.map((r) =>
         r.id === roleId
           ? { ...r, permissions: { ...r.permissions, [key]: !r.permissions[key] } }
           : r,
-      ),
-    );
+      );
+      saveRoles(params.id, next);
+      return next;
+    });
   }
 
   return (
@@ -38,7 +61,7 @@ export default function Page({ params }: { params: { id: string } }) {
 
       <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
         <div className="text-sm text-gray-600">
-          原型只做 4 个权限：发消息 / @全体 / 管理频道 / 踢人（不做完整矩阵与继承）。
+          原型只做 4 个权限：发消息 / @全体 / 管理频道 / 踢人。并把改动写入 localStorage。
         </div>
 
         <div className="mt-4 space-y-3">
@@ -59,7 +82,7 @@ export default function Page({ params }: { params: { id: string } }) {
                 {(
                   [
                     ['sendMessage', '发消息'],
-                    ['mentionEveryone', '@全体'],
+                    ['mentionEveryone', '@everyone'],
                     ['manageChannels', '管理频道'],
                     ['kickMembers', '踢人'],
                   ] as const
@@ -83,7 +106,7 @@ export default function Page({ params }: { params: { id: string } }) {
         </div>
 
         <div className="mt-4 text-xs text-gray-500">
-          下一步：把权限落库（server.roles），并在频道发言/管理入口处做权限拦截。
+          localStorage key：wg.discord.roles.{server.id}
         </div>
       </div>
     </div>
