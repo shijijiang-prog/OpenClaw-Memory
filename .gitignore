@@ -27,7 +27,8 @@ pnpm-debug.log*
 outputs/
 
 # Local memory notes
-memory/
+# memory/
+
 
 # Scratch/demo folders not part of deliverable
 mvp-demo/
