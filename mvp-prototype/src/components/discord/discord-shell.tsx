@@ -29,6 +29,7 @@ export default function DiscordShell({ children }: { children: React.ReactNode }
           <div className="text-sm font-semibold text-gray-900">Discord 原型</div>
           <div className="flex gap-2">
             <Tab href="/discord/servers" label="服务器" />
+            <Tab href="/discord/simulator" label="模拟器" />
             <Tab href="/discord/servers/join" label="加入" />
             <Tab href="/discord/servers/new" label="创建" />
           </div>
