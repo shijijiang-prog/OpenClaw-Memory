@@ -9,8 +9,9 @@ import {
   saveMessages,
   seedDiscordServers,
 } from '@/lib/discord-mock';
-import { incUnread, markRead } from '@/lib/discord-state';
+import { markRead } from '@/lib/discord-state';
 import { hasPermission } from '@/lib/discord-perms';
+import { getFirstUnreadIndex } from '@/lib/discord-unread';
 
 function nowId() {
   return Math.random().toString(16).slice(2);
@@ -47,27 +48,52 @@ export default function Page({
           {
             id: 'seed1',
             user: 'System',
-            text: '欢迎来到频道（原型）。这里演示：未读/回流 + 权限生效（@全体）。',
+            text: '欢迎来到频道（原型）。这里演示：未读定位（分割线 + 一键跳转）。',
             ts: Date.now() - 1000 * 60 * 5,
           },
         ],
   );
   const [text, setText] = useState('');
+
   const listRef = useRef<HTMLDivElement | null>(null);
-  const lastMsgTs = msgs.length ? msgs[msgs.length - 1]!.ts : Date.now();
+  const markerRef = useRef<HTMLDivElement | null>(null);
 
   const canMentionEveryone = hasPermission(server, meId, 'mentionEveryone');
   const canSend = hasPermission(server, meId, 'sendMessage');
 
-  // 进入频道：清未读 + 记录 lastRead
+  // 计算首条未读位置（基于 lastReadTs）
+  const firstUnreadIndex = useMemo(
+    () => getFirstUnreadIndex(sid, cid, msgs),
+    [sid, cid, msgs],
+  );
+
+  function scrollToFirstUnread() {
+    markerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // 进入频道：先滚到首条未读；如果没有未读则滚到底。
   useEffect(() => {
-    markRead(sid, cid, lastMsgTs);
-    // 回流：滚到底
     setTimeout(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-    }, 50);
+      if (firstUnreadIndex >= 0) {
+        scrollToFirstUnread();
+      } else {
+        listRef.current?.scrollTo({
+          top: listRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    }, 80);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sid, cid]);
+
+  // 离开频道/卸载：把最新消息时间写为 lastRead（等价“读到最新”）
+  useEffect(() => {
+    return () => {
+      const lastTs = msgs.length ? msgs[msgs.length - 1]!.ts : Date.now();
+      markRead(sid, cid, lastTs);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sid, cid, msgs]);
 
   function send() {
     if (!canSend) return;
@@ -84,13 +110,6 @@ export default function Page({
     setMsgs(next);
     saveMessages(sid, cid, next);
     setText('');
-
-    // 原型：模拟“其他频道未读增长”（为了演示 server/card 的未读点）
-    const other = seedDiscordServers.find((s) => s.id === sid)!.channels.find((c) => c.type === 'text' && c.id !== cid);
-    if (other) incUnread(sid, other.id, 1);
-
-    // 当前频道仍视为已读
-    markRead(sid, cid, next[next.length - 1]!.ts);
 
     setTimeout(() => {
       listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -117,37 +136,48 @@ export default function Page({
           >
             成员
           </Link>
-          <Link
-            href={`/discord/servers/${sid}/settings/roles`}
-            className="rounded-full bg-white px-3 py-1 text-sm ring-1 ring-black/10"
-          >
-            权限
-          </Link>
+          {firstUnreadIndex >= 0 ? (
+            <button
+              onClick={scrollToFirstUnread}
+              className="rounded-full bg-blue-600 px-3 py-1 text-sm text-white"
+            >
+              跳到首条未读
+            </button>
+          ) : null}
         </div>
       </div>
 
       <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
         <div className="mb-3 rounded-xl bg-[#f5f5f7] px-3 py-2 text-xs text-gray-600">
-          当前用户：Steven（u1 / admin）。
-          <span className="ml-2">sendMessage: {String(canSend)}</span>
-          <span className="ml-2">mentionEveryone: {String(canMentionEveryone)}</span>
-          <span className="ml-2">提示：发消息会给“另一个频道”模拟 +1 未读，用于演示回流。</span>
+          未读定位说明：用 lastReadTs 推导首条未读消息，渲染“未读分割线”，并支持一键跳转。
         </div>
 
         <div
           ref={listRef}
           className="max-h-[60dvh] space-y-3 overflow-auto rounded-xl border border-black/5 bg-white p-3"
         >
-          {msgs.map((m) => (
-            <div key={m.id} className="flex gap-3">
-              <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-[#f5f5f7]" />
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <div className="text-sm font-semibold text-gray-900">{m.user}</div>
-                  <div className="text-xs text-gray-400">{formatTime(m.ts)}</div>
+          {msgs.map((m, idx) => (
+            <div key={m.id}>
+              {idx === firstUnreadIndex ? (
+                <div ref={markerRef} className="my-3 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-blue-200" />
+                  <div className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+                    未读
+                  </div>
+                  <div className="h-px flex-1 bg-blue-200" />
                 </div>
-                <div className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-800">
-                  {m.text}
+              ) : null}
+
+              <div className="flex gap-3">
+                <div className="mt-0.5 h-8 w-8 shrink-0 rounded-full bg-[#f5f5f7]" />
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-sm font-semibold text-gray-900">{m.user}</div>
+                    <div className="text-xs text-gray-400">{formatTime(m.ts)}</div>
+                  </div>
+                  <div className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-800">
+                    {m.text}
+                  </div>
                 </div>
               </div>
             </div>
@@ -175,7 +205,7 @@ export default function Page({
         </div>
 
         <div className="mt-2 text-xs text-gray-500">
-          未读机制（原型）：本频道进入即 markRead；发送消息会给另一个频道 incUnread(+1)。
+          提示：配合 `/discord/simulator` 注入跨频道消息，你会看到“未读分割线”出现在首条未读前。
         </div>
       </div>
     </div>
