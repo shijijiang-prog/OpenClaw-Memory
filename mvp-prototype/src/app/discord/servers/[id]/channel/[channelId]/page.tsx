@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DiscordMessage,
@@ -24,16 +24,14 @@ function formatTime(ts: number) {
   });
 }
 
-export default function Page({
-  params,
-}: {
-  params: { id: string; channelId: string };
-}) {
-  const server = seedDiscordServers.find((s) => s.id === params.id);
+export default function Page() {
+  const params = useParams<{ id: string; channelId: string }>();
+
+  const server = seedDiscordServers.find((s) => s.id === params?.id);
   if (!server) return notFound();
   const sid = server.id;
 
-  const channel = server.channels.find((c) => c.id === params.channelId);
+  const channel = server.channels.find((c) => c.id === params?.channelId);
   if (!channel || channel.type !== 'text') return notFound();
   const cid = channel.id;
 
@@ -61,7 +59,6 @@ export default function Page({
   const canMentionEveryone = hasPermission(server, meId, 'mentionEveryone');
   const canSend = hasPermission(server, meId, 'sendMessage');
 
-  // 计算首条未读位置（基于 lastReadTs）
   const firstUnreadIndex = useMemo(
     () => getFirstUnreadIndex(sid, cid, msgs),
     [sid, cid, msgs],
@@ -71,7 +68,6 @@ export default function Page({
     markerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // 进入频道：先滚到首条未读；如果没有未读则滚到底。
   useEffect(() => {
     setTimeout(() => {
       if (firstUnreadIndex >= 0) {
@@ -86,7 +82,6 @@ export default function Page({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sid, cid]);
 
-  // 离开频道/卸载：把最新消息时间写为 lastRead（等价“读到最新”）
   useEffect(() => {
     return () => {
       const lastTs = msgs.length ? msgs[msgs.length - 1]!.ts : Date.now();
@@ -205,7 +200,7 @@ export default function Page({
         </div>
 
         <div className="mt-2 text-xs text-gray-500">
-          提示：配合 `/discord/simulator` 注入跨频道消息，你会看到“未读分割线”出现在首条未读前。
+          修复：Next 16 dev 下动态 params 读取报错导致 404；本页改为 useParams（client）。
         </div>
       </div>
     </div>

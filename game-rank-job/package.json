@@ -1,9 +1,0 @@
-{
-  "name": "game-rank-job",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "rank:run": "node job.js"
-  }
-}

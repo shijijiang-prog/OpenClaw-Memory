@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { seedDiscordServers } from '@/lib/discord-mock';
 
@@ -9,15 +9,13 @@ function voiceKey(serverId: string, channelId: string) {
   return `wg.discord.voice.${serverId}.${channelId}.joined`;
 }
 
-export default function Page({
-  params,
-}: {
-  params: { id: string; channelId: string };
-}) {
-  const server = seedDiscordServers.find((s) => s.id === params.id);
+export default function Page() {
+  const params = useParams<{ id: string; channelId: string }>();
+  const server = seedDiscordServers.find((s) => s.id === params?.id);
   if (!server) return notFound();
   const sid = server.id;
-  const channel = server.channels.find((c) => c.id === params.channelId);
+
+  const channel = server.channels.find((c) => c.id === params?.channelId);
   if (!channel || channel.type !== 'voice') return notFound();
   const cid = channel.id;
 
@@ -27,9 +25,7 @@ export default function Page({
   }, [sid, cid]);
 
   const [joined, setJoined] = useState(initialJoined);
-  const membersInRoom = joined
-    ? ['Steven', 'Mika', 'Luca']
-    : ['Mika'];
+  const membersInRoom = joined ? ['Steven', 'Mika', 'Luca'] : ['Mika'];
 
   function toggle() {
     const next = !joined;
@@ -66,9 +62,7 @@ export default function Page({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold text-gray-900">房间状态</div>
-            <div className="mt-1 text-sm text-gray-600">
-              {joined ? '已加入语音（原型占位）' : '未加入'}
-            </div>
+            <div className="mt-1 text-sm text-gray-600">{joined ? '已加入语音（原型占位）' : '未加入'}</div>
           </div>
           <button
             onClick={toggle}
@@ -101,7 +95,7 @@ export default function Page({
         </div>
 
         <div className="mt-4 text-xs text-gray-500">
-          下一步接入：WebRTC + SFU（如 mediasoup/livekit）。原型先用状态占位。
+          修复：Next 16 dev 下动态 params 读取报错导致 404；本页改为 useParams（client）。
         </div>
       </div>
     </div>

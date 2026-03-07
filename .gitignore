@@ -1,1 +1,36 @@
+# Env
 .env
+.env.*
+
+# OS
+.DS_Store
+
+# Node
+node_modules/
+**/node_modules/
+
+# Next.js
+.next/
+**/.next/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OpenClaw local state
+.openclaw/
+
+# Builds / outputs
+outputs/
+
+# Local memory notes
+memory/
+
+# Scratch/demo folders not part of deliverable
+mvp-demo/
+skills/
+game-rank-job/
+.clawhub/

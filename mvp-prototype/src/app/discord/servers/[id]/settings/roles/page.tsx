@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { seedDiscordServers, DiscordRole } from '@/lib/discord-mock';
 
 function rolesKey(serverId: string) {
-  return `wg.discord.roles.`;
+  return `wg.discord.roles.${serverId}`;
 }
 
 function loadRoles(serverId: string, fallback: DiscordRole[]) {
@@ -25,9 +25,11 @@ function saveRoles(serverId: string, roles: DiscordRole[]) {
   localStorage.setItem(rolesKey(serverId), JSON.stringify(roles));
 }
 
-export default function Page({ params }: { params: { id: string } }) {
-  const server = seedDiscordServers.find((s) => s.id === params.id);
+export default function Page() {
+  const params = useParams<{ id: string }>();
+  const server = seedDiscordServers.find((s) => s.id === params?.id);
   if (!server) return notFound();
+  const sid = server.id;
 
   const initial = useMemo(() => loadRoles(server.id, server.roles), [server.id]);
   const [roles, setRoles] = useState<DiscordRole[]>(initial);
@@ -39,7 +41,7 @@ export default function Page({ params }: { params: { id: string } }) {
           ? { ...r, permissions: { ...r.permissions, [key]: !r.permissions[key] } }
           : r,
       );
-      saveRoles(params.id, next);
+      saveRoles(sid, next);
       return next;
     });
   }
@@ -61,7 +63,7 @@ export default function Page({ params }: { params: { id: string } }) {
 
       <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
         <div className="text-sm text-gray-600">
-          原型只做 4 个权限：发消息 / @全体 / 管理频道 / 踢人。并把改动写入 localStorage。
+          原型只做 4 个权限：发消息 / @everyone / 管理频道 / 踢人。并把改动写入 localStorage。
         </div>
 
         <div className="mt-4 space-y-3">
@@ -105,9 +107,7 @@ export default function Page({ params }: { params: { id: string } }) {
           ))}
         </div>
 
-        <div className="mt-4 text-xs text-gray-500">
-          localStorage key：wg.discord.roles.{server.id}
-        </div>
+        <div className="mt-4 text-xs text-gray-500">localStorage key：wg.discord.roles.{server.id}</div>
       </div>
     </div>
   );

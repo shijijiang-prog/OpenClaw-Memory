@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { seedDiscordServers } from '@/lib/discord-mock';
 import { getLastRead, getUnread, setLastSeenServer } from '@/lib/discord-state';
 
-export default function Page({ params }: { params: { id: string } }) {
-  const server = seedDiscordServers.find((s) => s.id === params.id);
+export default function Page() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  const server = seedDiscordServers.find((s) => s.id === id);
   if (!server) return notFound();
 
   const textChannels = server.channels.filter((c) => c.type === 'text');
@@ -36,8 +38,8 @@ export default function Page({ params }: { params: { id: string } }) {
           <div className="text-xs font-semibold text-gray-500">文字频道</div>
           <div className="mt-2 space-y-1">
             {textChannels.map((c) => {
-              const unread = typeof window === 'undefined' ? 0 : getUnread(server.id, c.id);
-              const lastRead = typeof window === 'undefined' ? 0 : getLastRead(server.id, c.id);
+              const unread = getUnread(server.id, c.id);
+              const lastRead = getLastRead(server.id, c.id);
               const hint = unread > 0 ? `${unread} 未读` : lastRead ? '已读' : '';
               return (
                 <Link
@@ -95,7 +97,7 @@ export default function Page({ params }: { params: { id: string } }) {
           左侧选择 #文字频道 开始聊天，或进入 🔊语音频道（占位）。
         </div>
         <div className="mt-4 text-xs text-gray-500">
-          新增能力：本页会显示每个频道的未读数（来自 localStorage）。
+          修复：Next 16 dev 下动态 params 读取报错导致 404；现在改为 useParams（client）。
         </div>
       </div>
     </div>

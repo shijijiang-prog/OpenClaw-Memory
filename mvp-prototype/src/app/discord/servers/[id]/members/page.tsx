@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { seedDiscordServers } from '@/lib/discord-mock';
 
 function badge(status: string) {
@@ -11,8 +11,9 @@ function badge(status: string) {
   return 'bg-gray-400';
 }
 
-export default function Page({ params }: { params: { id: string } }) {
-  const server = seedDiscordServers.find((s) => s.id === params.id);
+export default function Page() {
+  const params = useParams<{ id: string }>();
+  const server = seedDiscordServers.find((s) => s.id === params?.id);
   if (!server) return notFound();
 
   return (
