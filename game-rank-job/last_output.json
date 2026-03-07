@@ -1,0 +1,40 @@
+{
+  "runAt": "2026-03-06T15:19:57.897Z",
+  "windowStart": "2026-03-06T09:19:57.898Z",
+  "windowEnd": "2026-03-06T15:19:57.898Z",
+  "steamTop100": [
+    {
+      "name": "Counter-Strike 2",
+      "link": "https://store.steampowered.com/app/730/CounterStrike_2/",
+      "rank": 1,
+      "onlineValue": 900000,
+      "platform": [
+        "PC"
+      ],
+      "isAAA": true
+    },
+    {
+      "name": "Dota 2",
+      "link": "https://store.steampowered.com/app/570/Dota_2/",
+      "rank": 2,
+      "onlineValue": 600000,
+      "platform": [
+        "PC"
+      ],
+      "isAAA": true
+    },
+    {
+      "name": "PUBG: BATTLEGROUNDS",
+      "link": "https://store.steampowered.com/app/578080/PUBG_BATTLEGROUNDS/",
+      "rank": 3,
+      "onlineValue": 500000,
+      "platform": [
+        "PC"
+      ],
+      "isAAA": true
+    }
+  ],
+  "steamTop500MoversTop10": [],
+  "mergedTop500MoversTop10": [],
+  "note": "当前为占位实现：Steam 榜单读取本地 stub 文件；移动端与合并榜需等待第三方 API key 后启用。"
+}
